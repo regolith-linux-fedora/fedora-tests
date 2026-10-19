@@ -1,0 +1,110 @@
+name: Session Test
+
+# Reusable: 01-05's fedora-session-test.yml calls this with the packages a repo builds.
+on:
+  workflow_call:
+    inputs:
+      packages:
+        description: "Packages under test (empty = profile default; required for regolith)"
+        type: string
+        default: ""
+      profile:
+        description: "stock | regolith"
+        type: string
+        default: stock
+      extra_repo:
+        description: "Extra repo: copr:<owner>/<project>, a .repo URL or a baseurl"
+        type: string
+        default: ""
+      releases:
+        description: "Space-separated Fedora releases; rawhide is non-blocking"
+        type: string
+        default: "43 44 rawhide"
+      harness_ref:
+        description: "Ref of regolith-linux-fedora/fedora-tests to run"
+        type: string
+        default: main
+  workflow_dispatch:
+    inputs:
+      packages:
+        type: string
+        default: ""
+      profile:
+        type: choice
+        options: [stock, regolith]
+        default: stock
+      extra_repo:
+        type: string
+        default: ""
+      releases:
+        type: string
+        default: "43 44 rawhide"
+      harness_ref:
+        type: string
+        default: main
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    outputs:
+      include: ${{ steps.m.outputs.include }}
+    steps:
+      # Until 01-07 publishes docs/fedora/targets.json, the releases input is the Target list.
+      - id: m
+        env:
+          RELEASES: ${{ inputs.releases }}
+        run: |
+          include=$(for r in $RELEASES; do
+            for runner in ubuntu-24.04 ubuntu-24.04-arm; do
+              arch=$([ "$runner" = ubuntu-24.04-arm ] && echo aarch64 || echo x86_64)
+              jq -n -c --arg release "$r" --arg runner "$runner" --arg arch "$arch" '$ARGS.named'
+            done
+          done | jq -s -c .)
+          echo "$include" | jq .
+          echo "include=$include" >> "$GITHUB_OUTPUT"
+
+  session-test:
+    needs: matrix
+    name: ${{ inputs.profile }} / fedora ${{ matrix.release }} / ${{ matrix.arch }}
+    runs-on: ${{ matrix.runner }}
+    # Rawhide is a Canary Target: its failures must not fail the workflow.
+    continue-on-error: ${{ matrix.release == 'rawhide' }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.include) }}
+    steps:
+      # When called from another repo, check out the harness, not the caller.
+      - uses: actions/checkout@v4
+        with:
+          repository: regolith-linux-fedora/fedora-tests
+          ref: ${{ inputs.harness_ref }}
+          path: fedora-tests
+
+      - name: Run Session Test
+        id: run
+        run: |
+          fedora-tests/session/run.sh --engine docker \
+            --release "${{ matrix.release }}" \
+            --profile "${{ inputs.profile }}" \
+            --packages "${{ inputs.packages }}" \
+            --repo "${{ inputs.extra_repo }}" \
+            --artifacts "$GITHUB_WORKSPACE/artifacts"
+
+      - name: Summary
+        if: always()
+        run: |
+          python3 fedora-tests/session/summarize.py artifacts/junit.xml \
+            "Session Test: ${{ inputs.profile }}, fedora ${{ matrix.release }}, ${{ matrix.arch }}" >> "$GITHUB_STEP_SUMMARY"
+          if [ -s artifacts/packages.txt ]; then
+            { echo; echo "<details><summary>Packages under test</summary>"; echo; echo '```'; cat artifacts/packages.txt; echo '```'; echo "</details>"; } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-${{ inputs.profile }}-fedora${{ matrix.release }}-${{ matrix.arch }}
+          path: artifacts/
+          if-no-files-found: warn

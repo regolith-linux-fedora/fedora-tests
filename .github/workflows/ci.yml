@@ -1,0 +1,28 @@
+name: CI
+
+# This repo's own checks: harness unit tests, then the stock Session Test on every
+# Target and both architectures (the 01-08 acceptance run).
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  unit:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Harness unit tests
+        working-directory: session
+        run: python3 -m unittest discover -s tests/unit -v
+      - name: Shell syntax
+        run: bash -n session/run.sh
+
+  stock:
+    needs: unit
+    uses: ./.github/workflows/session-test.yml
+    with:
+      profile: stock
+      # Test this commit of the harness, not main.
+      harness_ref: ${{ github.event.pull_request.head.sha || github.sha }}

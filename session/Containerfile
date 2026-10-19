@@ -1,0 +1,36 @@
+# Session Test image: fedora:<release> + the packages under test + the harness tools.
+# Built by session/run.sh; build context is session/.
+ARG RELEASE=43
+FROM registry.fedoraproject.org/fedora:${RELEASE}
+
+# Packages under test (profile default or --packages) and an optional extra repo:
+#   copr:<owner>/<project>   e.g. copr:@regolith/regolith-unstable
+#   https://…/x.repo         a .repo file
+#   https://…/               a baseurl
+ARG PACKAGES="sway swaybg foot"
+ARG EXTRA_REPO=""
+
+# Harness tools. File paths, so dnf resolves whichever package ships them on each release.
+ARG HARNESS="wtype grim jq python3-pytest python3-pillow dejavu-sans-mono-fonts /usr/bin/dbus-run-session /usr/bin/gdbus /usr/bin/pgrep"
+
+RUN set -eux; \
+    if [ -n "$EXTRA_REPO" ]; then \
+      dnf -y install 'dnf-command(copr)' 'dnf-command(config-manager)'; \
+      case "$EXTRA_REPO" in \
+        copr:*)   dnf -y copr enable "${EXTRA_REPO#copr:}" ;; \
+        *.repo)   dnf config-manager addrepo --from-repofile="$EXTRA_REPO" ;; \
+        *)        dnf config-manager addrepo --id=session-extra --set=baseurl="$EXTRA_REPO" --set=gpgcheck=0 ;; \
+      esac; \
+    fi; \
+    dnf -y --setopt=install_weak_deps=False install $PACKAGES $HARNESS; \
+    dnf clean all; \
+    rpm -q --qf '%{NAME}-%{VERSION}-%{RELEASE}.%{ARCH}\n' $(echo $PACKAGES | tr ' ' '\n' | grep -v '^/' ) > /etc/session-test-packages.txt || true
+
+RUN useradd -m tester
+COPY --chown=tester . /opt/session
+WORKDIR /opt/session
+USER tester
+ENV PYTHONDONTWRITEBYTECODE=1
+
+# run.sh passes the pytest arguments; the session bus wraps the whole test run.
+ENTRYPOINT ["dbus-run-session", "--", "python3", "-m", "pytest"]
