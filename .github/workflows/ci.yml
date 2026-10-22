@@ -16,8 +16,10 @@ jobs:
       - name: Harness unit tests
         working-directory: session
         run: python3 -m unittest discover -s tests/unit -v
+      - name: Boot Test unit tests
+        run: python3 -m unittest discover -s boot/tests -v
       - name: Shell syntax
-        run: bash -n session/run.sh
+        run: bash -n session/run.sh && bash -n boot/image/provision.sh
 
   stock:
     needs: unit
