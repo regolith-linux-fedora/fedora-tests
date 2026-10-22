@@ -5,7 +5,7 @@ Automated tests for the Regolith Fedora port (`regolith-linux-fedora`). Two laye
 | Layer | Directory | What it proves | Plan Tasks |
 |---|---|---|---|
 | **Session Test** | [`session/`](session/) | A sway session started **headlessly inside a Fedora container**, driven like a user through sway IPC, injected keystrokes (`wtype`), screenshots (`grim`) and D-Bus. Fast, no GPU, runs on GitHub-hosted runners for every Target on x86_64 and aarch64. | 01-08 (harness, stock profile), 03-02 and 06-02 (Regolith checks) |
-| **Boot Test** | [`boot/`](boot/) | A full Fedora Workstation VM booted to GDM and logged in to the Regolith Wayland Session. | 01-09 (spike), 06-03 |
+| **Boot Test** | [`boot/`](boot/) | A full Fedora Workstation VM booted with KVM on a GitHub-hosted runner, logged in at GDM by injected keystrokes, and checked over SSH (sway session, outputs, windows). 01-09 proves it with stock sway; 06-03 logs in to the Regolith Wayland Session. Nightly, not per pull request. | 01-09 (spike), 06-03 |
 
 Both layers attach screenshots to every run. Neither is a golden-image comparison: tests assert on state (IPC, D-Bus, processes) and keep screenshots as evidence.
 
