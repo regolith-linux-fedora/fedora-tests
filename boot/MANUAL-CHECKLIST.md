@@ -4,14 +4,14 @@ The release-gate fallback for an architecture CI can't boot (see [`RESULT.md`](R
 the automated Boot Test's assertions by hand. About 45 minutes the first time, 15 after that (reuse the
 VM from a snapshot).
 
-> **Validation status:** written 2026-10-22. It has **not** been dry-run yet: the agent that wrote it can't drive a
-> desktop VM application from its session. Steps marked *(unverified)* are
-> taken from Fedora's and Parallels' documentation. The first person to run it should correct anything
-> that differs and remove the marks.
+> **Validation status:** written 2026-10-22; first dry run 2026-11-04 on Fedora 45 aarch64 (Parallels 27.0.3,
+> Apple M1 Max), which passed. See the manual run log in [`RESULT.md`](RESULT.md).
 
 Placeholders: `<N>` is the Fedora release under test (a blocking Target from
 `regolith-linux-fedora/voulage` `docs/fedora/targets.json`), `<project>` is the COPR project being
 released (`regolith-testing` for a release candidate). For the 01-09 spike, skip step 4: stock Fedora only.
+Until Regolith packages are published (Task 06-01), the COPR projects have no repository for the chroot and
+`dnf copr enable` leaves a repo that returns "not found".
 
 ## 1. Get the image
 
@@ -24,16 +24,16 @@ released (`regolith-testing` for a release candidate). For the 01-09 spike, skip
    gpgv --keyring ./fedora.gpg Fedora-Workstation-*-aarch64-CHECKSUM   # "Good signature from Fedora (<N>)"
    shasum -a 256 -c Fedora-Workstation-*-aarch64-CHECKSUM --ignore-missing
    ```
-   *(unverified: macOS has no `gpgv` by default; install GnuPG, or skip the signature and keep the SHA256 check)*
+   macOS has no `gpgv` by default: install GnuPG, or skip the signature and keep the SHA256 check.
 
-## 2. Create the VM *(unverified)*
+## 2. Create the VM
 
 1. Parallels Desktop → **File → New → Install Windows, Linux or macOS from an image file** → choose the ISO.
-2. Name it `fedora-<N>-boot-test`. Before the first start, **Configure**: 2 CPUs, 4096 MB memory, 64 GB disk,
-   Graphics: default (no 3D needed), Network: Shared.
+2. Name it `fedora-<N>-boot-test`. Before the first start, **Configure**: at least 2 CPUs, 4096 MB memory and
+   a 64 GB disk (Parallels' defaults are fine), Graphics: default (no 3D needed), Network: Shared.
 3. Start the VM, choose **Start Fedora-Workstation-Live**, then **Install Fedora** in the live session.
 4. Install to the whole disk with defaults. In the first-boot setup create user `tester` with a password
-   you write down. Reboot, log in once at GDM to GNOME, and run `sudo dnf -y upgrade --refresh`; reboot.
+   you write down (any username works; the commands below use `$USER`). Reboot, log in once at GDM to GNOME, and run `sudo dnf -y upgrade --refresh`; reboot.
 5. Take a Parallels snapshot named `clean-<N>`.
 
 ## 3. Install what is being tested
@@ -55,7 +55,7 @@ sudo dnf -y install regolith-desktop regolith-session-sway      # package names 
 
 1. Log out (top-right menu → Power → Log Out).
 2. At GDM click `tester`. Before typing the password, click the **gear** at the bottom right and choose
-   **Sway** (06-03: the Regolith Wayland Session). *(unverified: the gear appears only after selecting the user)*
+   **Sway** (06-03: the Regolith Wayland Session). The gear appears only after selecting the user.
 3. Type the password and press Enter.
 4. **Expected:** a sway (Regolith) session; no GNOME Shell top bar.
 
@@ -66,8 +66,9 @@ In it, run each command and compare:
 
 | # | Command | Expected |
 |---|---|---|
-| 1 | `loginctl show-session $XDG_SESSION_ID -p Type -p Desktop -p Class -p Active` | `Type=wayland`, `Desktop=sway` (06-03: the Regolith session name), `Class=user`, `Active=yes` |
+| 1 | `loginctl show-session $XDG_SESSION_ID -p Type -p Desktop -p Class -p Active` | `Type=wayland`, `Class=user`, `Active=yes`. `Desktop=` is empty on GDM 50 and later (it was `sway` before) |
 | 2 | `pgrep -u "$USER" -x sway` | one PID |
+| 2a | `echo $XDG_SESSION_ID; grep -o 'session-[0-9]*\.scope' /proc/$(pgrep -u $USER -x sway)/cgroup` | the session ID, then `session-<that ID>.scope`: sway runs in this login session |
 | 3 | `echo $SWAYSOCK && swaymsg -t get_outputs \| jq -r '.[] \| select(.active) \| .name'` | a socket path, then at least one output name (e.g. `Virtual-1`) |
 | 4 | `swaymsg exec foot; sleep 2; swaymsg -t get_tree \| jq '[.. \| objects \| select(.app_id? == "foot")] \| length'` | `2` or more (this terminal plus the new one) |
 | 5 | `cat /etc/fedora-release; uname -m; rpm -q sway foot gdm` | Fedora `<N>`, `aarch64`, the package versions to record |
