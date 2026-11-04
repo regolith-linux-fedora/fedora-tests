@@ -1,26 +1,41 @@
 # Boot Test spike (Fedora Task 01-09): result
 
-**Status: pending.** The harness and workflow exist; no GitHub Actions run has happened yet because the
-repository isn't on GitHub yet. Fill in this page from the first 5 consecutive runs of
-[`boot-test.yml`](../.github/workflows/boot-test.yml).
+**Status: go on x86_64; aarch64 not available.** 5 consecutive runs on 2026-11-04 passed every step on
+GitHub's standard `ubuntu-24.04` runner with KVM, Fedora 44 (GDM 50.3, sway 1.11-3). GitHub's `ubuntu-24.04-arm`
+runner has no `/dev/kvm`.
 
 | Architecture | Outcome | Evidence |
 |---|---|---|
-| x86_64 (`ubuntu-24.04`, KVM) | _pending_ (go / no-go) | 5 run links, durations |
-| aarch64 (`ubuntu-24.04-arm`) | _pending_ (go / no-go / not-available) | `kvm-probe-aarch64` artifact; if KVM works, 5 run links |
+| x86_64 (`ubuntu-24.04`, KVM) | **go** | 5 of 5 runs passed, Boot Test 42.8–43.6 s, boot job 7.8–8.9 min |
+| aarch64 (`ubuntu-24.04-arm`) | **not-available** | `kvm-probe-aarch64`: `"dev_kvm": false`, qemu "Could not access KVM kernel module: No such file or directory" |
 
 Go means: 5 runs in a row pass every step (boot, gdm-greeter, gdm-login, sway-session, foot-via-ipc,
 foot-via-super-return) in under 30 minutes of Boot Test time, with screenshots attached.
 
 ## Runs
 
-| # | Date | Run | Arch | Image | Result | Boot Test time | Notes |
+All five are attempts of [run 41751642734](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734) (PR 2, commit 8e04150, Fedora 44, image restored
+from the cache built on 2026-11-04 in run 41747443838: provisioned in 3.6 min).
+
+| # | Date (UTC) | Run | Arch | Image | Result | Boot Test time | Boot job |
 |---|---|---|---|---|---|---|---|
-| 1 | | | | built / cached | | | |
-| 2 | | | | | | | |
-| 3 | | | | | | | |
-| 4 | | | | | | | |
-| 5 | | | | | | | |
+| 1 | 2026-11-04 01:07 | [attempt 1](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/1) | x86_64 | cached | PASSED | 43.5 s | 7.9 min |
+| 2 | 2026-11-04 01:18 | [attempt 2](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/2) | x86_64 | cached | PASSED | 42.8 s | 7.8 min |
+| 3 | 2026-11-04 01:36 | [attempt 3](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/3) | x86_64 | cached | PASSED | 43.6 s | 8.0 min |
+| 4 | 2026-11-04 01:45 | [attempt 4](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/4) | x86_64 | cached | PASSED | 43.5 s | 7.9 min |
+| 5 | 2026-11-04 01:54 | [attempt 5](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/5) | x86_64 | cached | PASSED | 43.5 s | 8.9 min |
+
+No flaky step in the five runs. Most of the boot job is freeing disk space, installing QEMU and restoring the
+cached image; the Boot Test itself is under a minute.
+
+## First-run fixes (2026-11-04)
+
+- [Run 41747443838](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41747443838): gdm-greeter timed out after 300 s. GDM 49 and later run the greeter as
+  the dynamic user `gdm-greeter`, not `gdm`, so `pgrep -u gdm -x gnome-shell` never matched although session
+  `c1` (class greeter) was active. Fixed in f2b58b1: use the greeter session's user.
+- [Run 41750206513](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41750206513): sway-session failed with "session desktop is '', expected sway" although
+  sway was running (screenshot shows the sway desktop). On GDM 50 logind reports `Desktop=` empty for every
+  session. Fixed in 8e04150: when `Desktop` isn't `sway`, require a sway process in `session-<Id>.scope`.
 
 ## What is already known (local, 2026-10-22)
 
@@ -37,9 +52,11 @@ foot-via-super-return) in under 30 minutes of Boot Test time, with screenshots a
 ## Manual fallback
 
 [`MANUAL-CHECKLIST.md`](MANUAL-CHECKLIST.md) (aarch64 Fedora Workstation in Parallels on Apple Silicon).
-Dry-run: _not yet_.
+Dry-run: _not yet_ (needs a human at a VM; the automated test covers the same steps on x86_64).
 
 ## Recommendation
 
-_To write after the runs._ If x86_64 is no-go on standard runners, compare larger runners or a self-hosted
-KVM machine here for a human to decide (out of scope for the agent).
+Run the Boot Test on x86_64 standard runners (KVM works; about 8 minutes per run with the cached image). Keep
+the nightly schedule once this is on `main`. aarch64 needs a runner with KVM (larger or self-hosted arm64);
+until then aarch64 stays covered by the Session Test (containers, native arm64) and the manual checklist. The
+default release is still 44; move it to 45, now the newest blocking Target, once 45 has passed a run.
