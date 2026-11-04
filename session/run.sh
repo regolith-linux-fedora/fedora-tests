@@ -63,7 +63,9 @@ args=("tests/$profile" "--artifacts=/artifacts" "--junitxml=/artifacts/junit.xml
 
 echo "== running tests/$profile on fedora:$release ($(uname -m))"
 status=0
-"$engine" run --rm --security-opt label=disable \
+# Fedora's /usr/bin/sway has the file capability cap_sys_nice=ep; exec fails
+# with EPERM unless the container's bounding set includes it.
+"$engine" run --rm --security-opt label=disable --cap-add SYS_NICE \
   -v "$artifacts:/artifacts" "$image" "${args[@]}" || status=$?
 
 "$engine" run --rm --entrypoint cat "$image" /etc/session-test-packages.txt > "$artifacts/packages.txt" 2>/dev/null || true
