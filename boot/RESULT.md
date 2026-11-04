@@ -25,6 +25,14 @@ from the cache built on 2026-11-04 in run 41747443838: provisioned in 3.6 min).
 | 4 | 2026-11-04 01:45 | [attempt 4](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/4) | x86_64 | cached | PASSED | 43.5 s | 7.9 min |
 | 5 | 2026-11-04 01:54 | [attempt 5](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/5) | x86_64 | cached | PASSED | 43.5 s | 8.9 min |
 
+Fedora 45 (PR 3, the default since then):
+
+| # | Date (UTC) | Run | Arch | Image | Result | Boot Test time | Boot job |
+|---|---|---|---|---|---|---|---|
+| 6 | 2026-11-04 08:21 | [41798738128](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41798738128) | x86_64 | built (provisioned in 3.6 min) | PASSED | 44.3 s | 9.1 min |
+
+Run 6 used gdm-51.0-1.fc45, gnome-shell-51.1-1.fc45, sway-1.12-2.fc45 and foot-1.28.0-1.fc45, with no harness change.
+
 No flaky step in the five runs. Most of the boot job is freeing disk space, installing QEMU and restoring the
 cached image; the Boot Test itself is under a minute.
 
@@ -59,4 +67,4 @@ Dry-run: _not yet_ (needs a human at a VM; the automated test covers the same st
 Run the Boot Test on x86_64 standard runners (KVM works; about 8 minutes per run with the cached image). Keep
 the nightly schedule once this is on `main`. aarch64 needs a runner with KVM (larger or self-hosted arm64);
 until then aarch64 stays covered by the Session Test (containers, native arm64) and the manual checklist. The
-default release is still 44; move it to 45, now the newest blocking Target, once 45 has passed a run.
+default release is 45, the newest blocking Target; move it when a newer release becomes `current`.
