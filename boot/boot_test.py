@@ -140,9 +140,16 @@ class BootTest:
 
     def sway(self):
         s = self.user_session()
-        if not s or s.get("Desktop", "").lower() != "sway":
-            raise StepFailed(f"session desktop is {s and s.get('Desktop')!r}, expected sway")
+        if not s:
+            raise StepFailed("no active Wayland session for the user")
         procs = self.vm.ssh(f"pgrep -u {self.args.user} -x sway", check=True).stdout.split()
+        if s.get("Desktop", "").lower() != "sway":
+            # GDM 50 (Fedora 44) leaves logind's Desktop empty: accept sway running
+            # in this session's scope instead.
+            scope = f"session-{s.get('Id')}.scope"
+            cgroups = self.vm.ssh(" ".join(f"cat /proc/{p}/cgroup;" for p in procs)).stdout
+            if scope not in cgroups:
+                raise StepFailed(f"session desktop is {s.get('Desktop')!r} and no sway runs in {scope}")
         self.sock = self.poll("sway IPC socket",
                               lambda: self.vm.ssh("ls /run/user/$(id -u)/sway-ipc.*.sock 2>/dev/null | head -n1")
                               .stdout.strip(), 60)
