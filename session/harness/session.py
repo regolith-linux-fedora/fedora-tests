@@ -102,8 +102,10 @@ class Session:
 
     # ---- environment for clients ------------------------------------------
     def client_env(self):
-        return dict(os.environ, XDG_RUNTIME_DIR=self.runtime_dir,
-                    WAYLAND_DISPLAY=self.wayland_display, SWAYSOCK=self.socket)
+        # start() polls swaymsg before WAYLAND_DISPLAY is known: leave unset values out
+        extra = dict(XDG_RUNTIME_DIR=self.runtime_dir,
+                     WAYLAND_DISPLAY=self.wayland_display, SWAYSOCK=self.socket)
+        return dict(os.environ, **{k: v for k, v in extra.items() if v is not None})
 
     def _run(self, argv, check=True, capture=True):
         return subprocess.run(argv, env=self.client_env(), check=check, text=True,
