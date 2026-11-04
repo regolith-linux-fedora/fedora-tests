@@ -17,7 +17,7 @@ released (`regolith-testing` for a release candidate). For the 01-09 spike, skip
 
 1. Download `Fedora-Workstation-Live-<N>-<compose>.aarch64.iso` and `Fedora-Workstation-<N>-<compose>-aarch64-CHECKSUM` from
    `https://dl.fedoraproject.org/pub/fedora/linux/releases/<N>/Workstation/aarch64/iso/`
-   (for Fedora 44: `Fedora-Workstation-Live-44-1.7.aarch64.iso`).
+   (for Fedora 45: `Fedora-Workstation-Live-45-1.4.aarch64.iso`).
 2. Verify it in Terminal:
    ```bash
    curl -O https://fedoraproject.org/fedora.gpg

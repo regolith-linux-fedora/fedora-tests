@@ -8,7 +8,7 @@ on:
     inputs:
       release:
         description: "Fedora release (newest blocking Target)"
-        default: "44"
+        default: "45"
       rebuild:
         description: "Rebuild the cached image"
         type: boolean
@@ -25,7 +25,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  RELEASE: ${{ inputs.release || '44' }}
+  RELEASE: ${{ inputs.release || '45' }}
 
 jobs:
   arm-probe:
