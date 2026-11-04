@@ -18,7 +18,7 @@ Fedora packages only; 06-03 adds Regolith.
 1. **boot**: QEMU with KVM, 4 GB, 2 vCPUs, no display, QMP socket, SSH forwarded; wait for SSH as `tester`.
 2. **gdm-greeter**: a `loginctl` session with `Class=greeter`, `Active=yes`, and `gnome-shell` running as `gdm`.
 3. **gdm-login**: over QMP, type `tester`, Enter, the password, Enter (retried once). Pass when `tester` has an active `Type=wayland` user session.
-4. **sway-session**: that session's `Desktop` is `sway`; `sway` runs as `tester`; `swaymsg -t get_outputs` over the session's IPC socket lists an active output.
+4. **sway-session**: that session's `Desktop` is `sway`, or, when it is empty (GDM 50 and later), a `sway` process runs in the session's `session-<Id>.scope`; `sway` runs as `tester`; `swaymsg -t get_outputs` over the session's IPC socket lists an active output.
 5. **foot-via-ipc**: `swaymsg exec foot` adds a `foot` window to `get_tree`.
 6. **foot-via-super-return**: an injected Super+Return (Fedora's default `$mod+Return` → `$term` = foot) adds another.
 

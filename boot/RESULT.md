@@ -72,7 +72,15 @@ Run 10 restored the image that run 9 saved: its boot job took 3.2 min instead of
 ## Manual fallback
 
 [`MANUAL-CHECKLIST.md`](MANUAL-CHECKLIST.md) (aarch64 Fedora Workstation in Parallels on Apple Silicon).
-Dry-run: _not yet_ (needs a human at a VM; the automated test covers the same steps on x86_64).
+Every step held on the first dry run, with two corrections to the checklist. On GDM 50 and later
+`loginctl` reports an empty `Desktop`, so assertion 2a checks that sway runs in the login session's scope (as
+the automated test does). Step 4 is skipped until Regolith packages are published.
+
+Manual run log:
+
+| Date | Target | Host | Result | Failed steps | Screenshots | Tester |
+|---|---|---|---|---|---|---|
+| 2026-11-04 | Fedora 45 aarch64 (sway-1.12-2.fc45, foot-1.28.0-1.fc45, gdm-51.0-1.fc45) | Parallels 27.0.3 on MacBook Pro (M1 Max), macOS 27.0.1 | pass | none (`Desktop=` empty; sway in `session-10.scope`) | in the Fedora Track plans repo (private) | joemoongit |
 
 ## Recommendation
 
