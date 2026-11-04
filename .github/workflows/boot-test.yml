@@ -24,9 +24,6 @@ concurrency:
   group: boot-test-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  RELEASE: ${{ inputs.release || '45' }}
-
 jobs:
   arm-probe:
     runs-on: ubuntu-24.04-arm
@@ -65,19 +62,35 @@ jobs:
     outputs:
       matrix: ${{ steps.plan.outputs.matrix }}
     steps:
+      # Releases: the dispatch input, or 45 on pull requests. The nightly run boots the two newest
+      # blocking Targets in voulage docs/fedora/targets.json (01-07), so older releases keep coverage.
       - id: plan
+        env:
+          EVENT: ${{ github.event_name }}
+          RELEASE: ${{ inputs.release || '45' }}
+          ARM_KVM: ${{ needs.arm-probe.outputs.kvm }}
+          TARGETS_URL: https://raw.githubusercontent.com/regolith-linux-fedora/voulage/fedora/main/docs/fedora/targets.json
         run: |
-          matrix='[{"arch":"x86_64","runner":"ubuntu-24.04","qemu":"qemu-system-x86"}'
-          if [ "${{ needs.arm-probe.outputs.kvm }}" = "true" ]; then
-            matrix+=',{"arch":"aarch64","runner":"ubuntu-24.04-arm","qemu":"qemu-system-arm qemu-efi-aarch64"}'
+          if [ "$EVENT" = schedule ]; then
+            releases=$(curl -fsSL "$TARGETS_URL" | jq -r '[.targets[].release | tonumber] | sort | .[-2:] | map(tostring) | join(" ")')
+          else
+            releases=$RELEASE
           fi
-          echo "matrix=${matrix}]" >> "$GITHUB_OUTPUT"
+          matrix=$(jq -n -c --arg releases "$releases" --argjson arm "${ARM_KVM:-false}" '
+            [($releases | split(" ")[] | select(. != "")) as $r
+             | ({arch: "x86_64", runner: "ubuntu-24.04", qemu: "qemu-system-x86"},
+                if $arm then {arch: "aarch64", runner: "ubuntu-24.04-arm", qemu: "qemu-system-arm qemu-efi-aarch64"} else empty end)
+             | . + {release: $r}]')
+          echo "$matrix" | jq .
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   boot:
     needs: plan
     if: ${{ always() && needs.plan.result == 'success' }}
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
+    env:
+      RELEASE: ${{ matrix.release }}
     strategy:
       fail-fast: false
       matrix:
@@ -154,7 +167,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: ${{ always() }}
         with:
-          name: boot-test-${{ matrix.arch }}
+          name: boot-test-${{ matrix.arch }}-fedora-${{ matrix.release }}
           path: |
             artifacts/
             work/image/vm/serial.log

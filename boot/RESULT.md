@@ -75,4 +75,5 @@ Dry-run: _not yet_ (needs a human at a VM; the automated test covers the same st
 Run the Boot Test on x86_64 standard runners (KVM works; about 8 minutes per run when the image is built, less when it is restored from the cache). Keep
 the nightly schedule once this is on `main`. aarch64 needs a runner with KVM (larger or self-hosted arm64);
 until then aarch64 stays covered by the Session Test (containers, native arm64) and the manual checklist. The
-default release is 45, the newest blocking Target; move it when a newer release becomes `current`.
+default release is 45, the newest blocking Target; move it when a newer release becomes `current`. The nightly run
+boots the two newest blocking Targets, so the previous release keeps boot coverage.

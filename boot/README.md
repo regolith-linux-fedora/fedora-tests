@@ -29,7 +29,9 @@ A screenshot (`NN-<step>.png`) is taken after every step, pass or fail.
 GitHub Actions: [`.github/workflows/boot-test.yml`](../.github/workflows/boot-test.yml) runs nightly, on
 `workflow_dispatch`, and on pull requests that touch `boot/`. It probes KVM on `ubuntu-24.04-arm`, builds
 or restores the cached image (rebuilt weekly or when `boot/image`, `build_image.py` or `vmtest/` change),
-runs the test for x86_64, and for aarch64 only when the ARM runner has KVM.
+runs the test for x86_64, and for aarch64 only when the ARM runner has KVM. Dispatched and pull request runs
+boot Fedora 45 (the `release` input); the nightly run boots the two newest blocking Targets in voulage
+`docs/fedora/targets.json`.
 
 Locally, on Linux with `/dev/kvm`:
 
