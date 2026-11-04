@@ -32,8 +32,11 @@ Fedora 45 (PR 3, the default since then):
 |---|---|---|---|---|---|---|---|
 | 6 | 2026-11-04 08:21 | [41798738128](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41798738128) | x86_64 | built | PASSED | 44.3 s | 9.1 min |
 | 7 | 2026-11-04 08:32 | [41800133884](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41800133884) | x86_64 | built | PASSED | 43.9 s | 8.0 min |
+| 8 | 2026-11-04 09:00 | [41803831410](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41803831410) (PR 4) | x86_64 | built | PASSED | 43.3 s | 11.6 min |
+| 9 | 2026-11-04 09:13 | [41805620512](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41805620512) (`main`) | x86_64 | built | PASSED | 43.0 s | 8.1 min |
+| 10 | 2026-11-04 09:22 | [41806861610](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41806861610) (`main`) | x86_64 | cached | PASSED | 45.1 s | 3.2 min |
 
-Runs 6 and 7 used gdm-51.0-1.fc45, gnome-shell-51.1-1.fc45, sway-1.12-2.fc45 and foot-1.28.0-1.fc45, with no harness change.
+Fedora 45 is **go** on x86_64 too: runs 6 to 10 passed in a row. They used gdm-51.0-1.fc45, gnome-shell-51.1-1.fc45, sway-1.12-2.fc45 and foot-1.28.0-1.fc45, with no harness change.
 
 No flaky step in the five runs. Most of the boot job is freeing disk space, installing QEMU and building the
 image; the Boot Test itself is under a minute.
@@ -43,6 +46,7 @@ image; the Boot Test itself is under a minute.
 Until PR 4 the restore and save steps each computed `hashFiles('boot/vmtest/**')`. Building the image imports
 `boot/vmtest`, which writes `__pycache__/` there, so the saved key never matched the next restore and every run
 rebuilt the image, saving another cache entry of about 4.8 GiB. The key is now computed once, before the build.
+Run 10 restored the image that run 9 saved: its boot job took 3.2 min instead of about 8.
 
 ## First-run fixes (2026-11-04)
 
