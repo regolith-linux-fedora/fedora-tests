@@ -104,7 +104,9 @@ class BootTest:
         def ready():
             for s in self.sessions():
                 if s.get("Class") == "greeter" and s.get("Active") == "yes":
-                    shell = self.vm.ssh("pgrep -u gdm -x gnome-shell", timeout=15)
+                    # GDM 49+ runs the greeter as the dynamic user gdm-greeter, older GDM as gdm
+                    user = s.get("Name") or "gdm"
+                    shell = self.vm.ssh(f"pgrep -u {user} -x gnome-shell", timeout=15)
                     return s if shell.returncode == 0 else None
             return None
         s = self.poll("active GDM greeter session", ready, self.args.gdm_timeout)
