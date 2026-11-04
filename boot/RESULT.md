@@ -14,27 +14,35 @@ foot-via-super-return) in under 30 minutes of Boot Test time, with screenshots a
 
 ## Runs
 
-All five are attempts of [run 41751642734](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734) (PR 2, commit 8e04150, Fedora 44, image restored
-from the cache built on 2026-11-04 in run 41747443838: provisioned in 3.6 min).
+All five are attempts of [run 41751642734](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734) (PR 2, commit 8e04150, Fedora 44). Every run built
+the image afresh (provisioned in 3.6 min): the restore step never found the cache because the save step's key
+differed (see Image cache below).
 
 | # | Date (UTC) | Run | Arch | Image | Result | Boot Test time | Boot job |
 |---|---|---|---|---|---|---|---|
-| 1 | 2026-11-04 01:07 | [attempt 1](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/1) | x86_64 | cached | PASSED | 43.5 s | 7.9 min |
-| 2 | 2026-11-04 01:18 | [attempt 2](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/2) | x86_64 | cached | PASSED | 42.8 s | 7.8 min |
-| 3 | 2026-11-04 01:36 | [attempt 3](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/3) | x86_64 | cached | PASSED | 43.6 s | 8.0 min |
-| 4 | 2026-11-04 01:45 | [attempt 4](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/4) | x86_64 | cached | PASSED | 43.5 s | 7.9 min |
-| 5 | 2026-11-04 01:54 | [attempt 5](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/5) | x86_64 | cached | PASSED | 43.5 s | 8.9 min |
+| 1 | 2026-11-04 01:07 | [attempt 1](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/1) | x86_64 | built | PASSED | 43.5 s | 7.9 min |
+| 2 | 2026-11-04 01:18 | [attempt 2](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/2) | x86_64 | built | PASSED | 42.8 s | 7.8 min |
+| 3 | 2026-11-04 01:36 | [attempt 3](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/3) | x86_64 | built | PASSED | 43.6 s | 8.0 min |
+| 4 | 2026-11-04 01:45 | [attempt 4](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/4) | x86_64 | built | PASSED | 43.5 s | 7.9 min |
+| 5 | 2026-11-04 01:54 | [attempt 5](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41751642734/attempts/5) | x86_64 | built | PASSED | 43.5 s | 8.9 min |
 
 Fedora 45 (PR 3, the default since then):
 
 | # | Date (UTC) | Run | Arch | Image | Result | Boot Test time | Boot job |
 |---|---|---|---|---|---|---|---|
-| 6 | 2026-11-04 08:21 | [41798738128](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41798738128) | x86_64 | built (provisioned in 3.6 min) | PASSED | 44.3 s | 9.1 min |
+| 6 | 2026-11-04 08:21 | [41798738128](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41798738128) | x86_64 | built | PASSED | 44.3 s | 9.1 min |
+| 7 | 2026-11-04 08:32 | [41800133884](https://github.com/regolith-linux-fedora/fedora-tests/actions/runs/41800133884) | x86_64 | built | PASSED | 43.9 s | 8.0 min |
 
-Run 6 used gdm-51.0-1.fc45, gnome-shell-51.1-1.fc45, sway-1.12-2.fc45 and foot-1.28.0-1.fc45, with no harness change.
+Runs 6 and 7 used gdm-51.0-1.fc45, gnome-shell-51.1-1.fc45, sway-1.12-2.fc45 and foot-1.28.0-1.fc45, with no harness change.
 
-No flaky step in the five runs. Most of the boot job is freeing disk space, installing QEMU and restoring the
-cached image; the Boot Test itself is under a minute.
+No flaky step in the five runs. Most of the boot job is freeing disk space, installing QEMU and building the
+image; the Boot Test itself is under a minute.
+
+## Image cache
+
+Until PR 4 the restore and save steps each computed `hashFiles('boot/vmtest/**')`. Building the image imports
+`boot/vmtest`, which writes `__pycache__/` there, so the saved key never matched the next restore and every run
+rebuilt the image, saving another cache entry of about 4.8 GiB. The key is now computed once, before the build.
 
 ## First-run fixes (2026-11-04)
 
@@ -64,7 +72,7 @@ Dry-run: _not yet_ (needs a human at a VM; the automated test covers the same st
 
 ## Recommendation
 
-Run the Boot Test on x86_64 standard runners (KVM works; about 8 minutes per run with the cached image). Keep
+Run the Boot Test on x86_64 standard runners (KVM works; about 8 minutes per run when the image is built, less when it is restored from the cache). Keep
 the nightly schedule once this is on `main`. aarch64 needs a runner with KVM (larger or self-hosted arm64);
 until then aarch64 stays covered by the Session Test (containers, native arm64) and the manual checklist. The
 default release is 45, the newest blocking Target; move it when a newer release becomes `current`.

@@ -102,10 +102,12 @@ jobs:
       - name: Probe KVM
         run: mkdir -p artifacts && python3 boot/kvm_probe.py --out artifacts/kvm-probe-${{ matrix.arch }}.json
 
+      # Computed once: building the image imports boot/vmtest and writes __pycache__ there, so a
+      # hashFiles() in the save step would give a key that the next run's restore never matches.
       - name: Image cache key
         id: key
         run: |
-          echo "week=$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
+          echo "key=boot-image-$RELEASE-${{ matrix.arch }}-${{ hashFiles('boot/image/**', 'boot/build_image.py', 'boot/vmtest/*.py') }}-$(date -u +%G-W%V)" >> "$GITHUB_OUTPUT"
 
       - name: Restore image
         id: cache
@@ -113,7 +115,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: cache
-          key: boot-image-${{ env.RELEASE }}-${{ matrix.arch }}-${{ hashFiles('boot/image/**', 'boot/build_image.py', 'boot/vmtest/**') }}-${{ steps.key.outputs.week }}
+          key: ${{ steps.key.outputs.key }}
 
       - name: Build image
         if: ${{ steps.cache.outputs.cache-hit != 'true' }}
@@ -130,7 +132,7 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: cache
-          key: boot-image-${{ env.RELEASE }}-${{ matrix.arch }}-${{ hashFiles('boot/image/**', 'boot/build_image.py', 'boot/vmtest/**') }}-${{ steps.key.outputs.week }}
+          key: ${{ steps.key.outputs.key }}
 
       - name: Boot Test
         timeout-minutes: 30
