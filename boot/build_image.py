@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build the Boot Test base image: Fedora Cloud Base Generic -> Fedora Workstation with GDM and sway.
 
-    boot/build_image.py --release 44 --arch x86_64 --ssh-pubkey key.pub --out cache/boot-44-x86_64.qcow2
+    boot/build_image.py --release 45 --arch x86_64 --ssh-pubkey key.pub --out cache/boot-45-x86_64.qcow2
 
 Downloads the Cloud Base Generic qcow2 for the release, verifies its SHA256 against Fedora's CHECKSUM file
 (and the CHECKSUM's OpenPGP signature when gpgv is installed), grows the disk, then boots it once with a
@@ -117,7 +117,7 @@ def make_seed(workdir, password, pubkey):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--release", default="44")
+    ap.add_argument("--release", default="45")
     ap.add_argument("--arch", default="x86_64", choices=["x86_64", "aarch64"])
     ap.add_argument("--ssh-pubkey", required=True)
     ap.add_argument("--password", default="boot-test-123")

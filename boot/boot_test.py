@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Boot Test: boot the Workstation image, log in at GDM with injected keys, assert the sway session.
 
-    boot/boot_test.py --image cache/boot-44-x86_64.qcow2 --arch x86_64 --ssh-key key --artifacts artifacts/
+    boot/boot_test.py --image cache/boot-45-x86_64.qcow2 --arch x86_64 --ssh-key key --artifacts artifacts/
 
 Steps (a screenshot after each): boot and wait for SSH; wait for the GDM greeter; type the username and
 password over QMP; wait for tester's Wayland session; check sway, its outputs and IPC; open foot with

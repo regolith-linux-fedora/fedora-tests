@@ -36,8 +36,8 @@ Locally, on Linux with `/dev/kvm`:
 ```bash
 sudo apt-get install qemu-system-x86 qemu-utils cloud-image-utils gpgv   # or the Fedora equivalents
 ssh-keygen -q -t ed25519 -N '' -f cache/id_ed25519
-python3 boot/build_image.py --release 44 --arch x86_64 --ssh-pubkey cache/id_ed25519.pub --out cache/boot-44-x86_64.qcow2
-python3 boot/boot_test.py --image cache/boot-44-x86_64.qcow2 --arch x86_64 --ssh-key cache/id_ed25519
+python3 boot/build_image.py --release 45 --arch x86_64 --ssh-pubkey cache/id_ed25519.pub --out cache/boot-45-x86_64.qcow2
+python3 boot/boot_test.py --image cache/boot-45-x86_64.qcow2 --arch x86_64 --ssh-key cache/id_ed25519
 ```
 
 Without KVM (a Mac, Docker), only the plumbing can be checked: `python3 boot/tests/smoke_tcg.py` boots the
