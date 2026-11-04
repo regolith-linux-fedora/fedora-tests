@@ -64,6 +64,6 @@ session/run.sh --release 43 --profile stock -k unbound --invert-negative   # exp
 
 ## In GitHub Actions
 
-`.github/workflows/session-test.yml` is reusable (`workflow_call`, also `workflow_dispatch`). Inputs: `packages`, `profile`, `extra_repo`, `releases` (space-separated, default `43 44 rawhide`), `harness_ref`. The matrix is releases × `ubuntu-24.04` (x86_64) / `ubuntu-24.04-arm` (aarch64), so arm64 runs natively, not under emulation. Rawhide jobs are `continue-on-error`. Each job writes a results table to the job summary and uploads `artifacts/` as `session-<profile>-fedora<release>-<arch>`.
+`.github/workflows/session-test.yml` is reusable (`workflow_call`, also `workflow_dispatch`). Inputs: `packages`, `profile`, `extra_repo`, `releases` (space-separated; default: every Target in voulage `docs/fedora/targets.json`), `harness_ref`. The matrix is releases × `ubuntu-24.04` (x86_64) / `ubuntu-24.04-arm` (aarch64), so arm64 runs natively, not under emulation. Only the `targets` releases block; early-warning and Rawhide jobs are `continue-on-error`. Containers get `--cap-add SYS_NICE` because Fedora's `/usr/bin/sway` has `cap_sys_nice=ep`. Each job writes a results table to the job summary and uploads `artifacts/` as `session-<profile>-fedora<release>-<arch>`.
 
 Until Task 01-07 publishes `docs/fedora/targets.json` in voulage, the `releases` input is the Target list.

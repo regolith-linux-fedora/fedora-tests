@@ -17,9 +17,9 @@ on:
         type: string
         default: ""
       releases:
-        description: "Space-separated Fedora releases; rawhide is non-blocking"
+        description: "Space-separated Fedora releases (default: the Targets in voulage docs/fedora/targets.json); rawhide is non-blocking"
         type: string
-        default: "43 44 rawhide"
+        default: ""
       harness_ref:
         description: "Ref of regolith-linux-fedora/fedora-tests to run"
         type: string
@@ -38,7 +38,7 @@ on:
         default: ""
       releases:
         type: string
-        default: "43 44 rawhide"
+        default: ""
       harness_ref:
         type: string
         default: main
@@ -49,15 +49,26 @@ jobs:
     outputs:
       include: ${{ steps.m.outputs.include }}
     steps:
-      # Until 01-07 publishes docs/fedora/targets.json, the releases input is the Target list.
+      # Default: every Target in voulage docs/fedora/targets.json (01-07). Only
+      # its "targets" block is blocking; early-warning releases and Rawhide aren't.
       - id: m
         env:
           RELEASES: ${{ inputs.releases }}
+          TARGETS_URL: https://raw.githubusercontent.com/regolith-linux-fedora/voulage/fedora/main/docs/fedora/targets.json
         run: |
-          include=$(for r in $RELEASES; do
+          if [ -n "$RELEASES" ]; then
+            targets=$(for r in $RELEASES; do
+              jq -n -c --arg release "$r" '{release: $release, blocking: ($release != "rawhide")}'
+            done)
+          else
+            targets=$(curl -fsSL "$TARGETS_URL" | jq -c '
+              (.targets[] | {release, blocking: true}),
+              ((.early_warning + .canary)[] | {release, blocking: false})')
+          fi
+          include=$(echo "$targets" | while read -r t; do
             for runner in ubuntu-24.04 ubuntu-24.04-arm; do
               arch=$([ "$runner" = ubuntu-24.04-arm ] && echo aarch64 || echo x86_64)
-              jq -n -c --arg release "$r" --arg runner "$runner" --arg arch "$arch" '$ARGS.named'
+              echo "$t" | jq -c --arg runner "$runner" --arg arch "$arch" '. + {runner: $runner, arch: $arch}'
             done
           done | jq -s -c .)
           echo "$include" | jq .
@@ -67,8 +78,8 @@ jobs:
     needs: matrix
     name: ${{ inputs.profile }} / fedora ${{ matrix.release }} / ${{ matrix.arch }}
     runs-on: ${{ matrix.runner }}
-    # Rawhide is a Canary Target: its failures must not fail the workflow.
-    continue-on-error: ${{ matrix.release == 'rawhide' }}
+    # Canary (Rawhide) and early-warning Targets must not fail the workflow.
+    continue-on-error: ${{ !matrix.blocking }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
